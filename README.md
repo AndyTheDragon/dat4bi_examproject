@@ -18,9 +18,9 @@ Arhaan Thai is a local restaurant that serves customers through five distinct sa
 
 The purpose is to analyze and predict customer behaviour per channel so that the restaurant can:
 
-- optimize operations
-- adjust menu offerings and marketing
-- increase revenue and customer satisfaction
+- Optimize operations
+- Adjust menu offerings and marketing
+- Increase revenue and customer satisfaction
 
 ## Research Questions
 
