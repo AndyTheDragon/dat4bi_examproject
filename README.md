@@ -34,6 +34,10 @@ The purpose is to analyze and predict customer behaviour per channel so that the
 - The more main dishes ordered in house, the more beverages is ordered.
 - The weekdays with the lowest order-totals will have more take-away orders.
 
+## Proposed Solution
+
+We will build a descriptive analytics and machine learning project to achieve this goal. We will first perform an exploratory data analysis (EDA) to describe the differences in order characteristics across channels. We will then develop a predictive classification model to determine which sales channel an order belongs to based on its features. The model's insights, derived from feature importance and model coefficients, will serve as our primary source of understanding customer behavior.
+
 ## Data and Scope
 
 The project will use historical order data. We will aggregate and engineer features from the order lines to form a dataset with the following columns:
