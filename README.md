@@ -24,7 +24,7 @@ The purpose is to analyze and predict customer behaviour per channel so that the
 
 ## Research Questions
 
-- *"How do key order characteristics differ across the five sales channels?"*
+- *"How do order characteristics differ across the five sales channels?"*
 - *"Can we predict the sales channel of a new order with at least 80% accuracy?"*
 - *"Which features are most important for differentiating sales channels, and how can these insights guide operations and marketing?"*
 
