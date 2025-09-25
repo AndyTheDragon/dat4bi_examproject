@@ -30,29 +30,37 @@ The purpose is to analyze and predict customer behaviour per channel so that the
 
 ## Hypotheses
 
-something something hypotheses
+- Orders placed through a takeaway platform will have a higher order total compared to in house dining
+- The more main dishes ordered in house, the more beverages is ordered.
+- The weekdays with the lowest order-totals will have more take-away orders.
 
 ## Data and Scope
 
 The project will use historical order data. We will aggregate and engineer features from the order lines to form a dataset with the following columns:
-• order_id (unique identifier)
-• sales_channel (our target variable)
-• number_of_maindishes
-• number_of_snacks
-• number_of_drinks
-• order_total
-• is_takeaway (a binary variable)
-• time_of_day
-• day_of_week
+
+- order_id (unique identifier)
+- sales_channel (our target variable)
+- number_of_maindishes
+- number_of_snacks
+- number_of_drinks
+- order_total
+- is_takeaway (a binary variable)
+- time_of_day
+- day_of_week
 
 ## Project Planning
 
-- Sprint timeline
+- **Sprint Timeline**
+  - Sprint 1: Problem Formulation
+  - Sprint 2: Data Preparation
+  - Sprint 3: Data Modelling
+  - Sprint 4: Business Application
 - Tools and technologies
 - Teamwork setup
 
 ## Repository & Developtment setup
 
-- Repo URL
+Git repository: [https://github.com/AndyTheDragon/dat4bi_examproject](https://github.com/AndyTheDragon/dat4bi_examproject)
+
 - Structure
 - Software Requirements
