@@ -382,7 +382,15 @@ def _top_features_for_pc(pca: PCA, feature_names: List[str], pc_index: int, top_
     idx = np.argsort(np.abs(comp))[::-1][:top_k]
     return [_pretty_name(feature_names[i]) for i in idx]
 
-def plot_pca_scatter_2d_named(pipeline: Pipeline, X: pd.DataFrame, labels: np.ndarray, top_k: int = 3, title_prefix: str = "Clusters (PCA 2D)"):
+def plot_pca_scatter_2d_named(
+    pipeline: Pipeline,
+    X: pd.DataFrame,
+    labels: np.ndarray,
+    top_k: int = 3,
+    title_prefix: str = "Clusters (PCA 2D)",
+    annotate: bool = True,  # kept for signature compatibility; ignored
+    cluster_names: Optional[Dict[int, str] | Sequence[str]] = None,
+):
     pre = pipeline.named_steps["prep"]
     X_encoded = pre.transform(X)
     pca = pipeline.named_steps.get("pca")
@@ -392,14 +400,31 @@ def plot_pca_scatter_2d_named(pipeline: Pipeline, X: pd.DataFrame, labels: np.nd
     else:
         Z_full = pca.transform(X_encoded)
         Z2 = Z_full[:, :2] if Z_full.shape[1] >= 2 else PCA(n_components=2, random_state=42).fit_transform(X_encoded)
+
     feature_names = _get_encoded_feature_names_from_prep(pre)
     top1 = ", ".join(_top_features_for_pc(pca, feature_names, 0, top_k))
     top2 = ", ".join(_top_features_for_pc(pca, feature_names, 1, top_k))
+
+    # Helper to resolve names
+    def name_for(c: int) -> str:
+        if isinstance(cluster_names, dict):
+            return cluster_names.get(int(c), f"Cluster {int(c)}")
+        if isinstance(cluster_names, (list, tuple)) and int(c) < len(cluster_names):
+            return str(cluster_names[int(c)])
+        return f"Cluster {int(c)}"
+
     plt.figure()
-    plt.scatter(Z2[:, 0], Z2[:, 1], c=labels, s=12)
     plt.title(title_prefix)
     plt.xlabel(f"PC1 (top: {top1})")
     plt.ylabel(f"PC2 (top: {top2})")
+
+    clusters = np.unique(labels)
+    cmap = plt.get_cmap("tab10" if len(clusters) <= 10 else "tab20")
+    for i, c in enumerate(clusters):
+        m = labels == c
+        plt.scatter(Z2[m, 0], Z2[m, 1], s=12, color=cmap(i % cmap.N), label=name_for(int(c)), alpha=0.9)
+
+    plt.legend(loc="upper right", frameon=True, title="Clusters")
     plt.tight_layout()
     plt.show()
 
@@ -427,15 +452,39 @@ def plot_pca_scatter_3d_named(pipeline: Pipeline, X: pd.DataFrame, labels: np.nd
     plt.tight_layout()
     plt.show()
 
-def plot_feature_scatter_2d(X: pd.DataFrame, labels: np.ndarray, x_col: str, y_col: str, title: Optional[str] = None):
+def plot_feature_scatter_2d(
+    X: pd.DataFrame,
+    labels: np.ndarray,
+    x_col: str,
+    y_col: str,
+    title: Optional[str] = None,
+    annotate: bool = True,  # kept for signature compatibility; ignored
+    cluster_names: Optional[Dict[int, str] | Sequence[str]] = None,
+):
     if title is None:
         title = f"{x_col} vs {y_col}"
     x = X[x_col].values
     y = X[y_col].values
+
+    # Helper to resolve names
+    def name_for(c: int) -> str:
+        if isinstance(cluster_names, dict):
+            return cluster_names.get(int(c), f"Cluster {int(c)}")
+        if isinstance(cluster_names, (list, tuple)) and int(c) < len(cluster_names):
+            return str(cluster_names[int(c)])
+        return f"Cluster {int(c)}"
+
     plt.figure()
-    plt.scatter(x, y, c=labels, s=12)
     plt.title(title)
     plt.xlabel(x_col); plt.ylabel(y_col)
+
+    clusters = np.unique(labels)
+    cmap = plt.get_cmap("tab10" if len(clusters) <= 10 else "tab20")
+    for i, c in enumerate(clusters):
+        m = labels == c
+        plt.scatter(x[m], y[m], s=12, color=cmap(i % cmap.N), label=name_for(int(c)), alpha=0.9)
+
+    plt.legend(loc="upper right", frameon=True, title="Clusters")
     plt.tight_layout()
     plt.show()
 
