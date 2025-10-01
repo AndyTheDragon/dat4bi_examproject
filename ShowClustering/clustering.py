@@ -22,9 +22,12 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Sequence, Tuple
 
-import matplotlib.pyplot as plt
+
 import numpy as np
 import pandas as pd
+import matplotlib.pyplot as plt
+
+from mpl_toolkits.mplot3d import Axes3D 
 from sklearn.cluster import AgglomerativeClustering, MeanShift, estimate_bandwidth
 from sklearn.compose import ColumnTransformer
 from sklearn.decomposition import PCA
@@ -46,6 +49,9 @@ __all__ = [
     "plot_cluster_sizes",
     "plot_pca_scatter_2d",
     "plot_centroids_over_pca",
+    # added interactive plots
+    "plot_pca_scatter_3d_interactive_named",
+    "plot_feature_scatter_3d_interactive",
 ]
 
 # ---------------------------- Data & Features ----------------------------
@@ -346,22 +352,155 @@ def plot_cluster_sizes(labels: np.ndarray) -> None:
     plt.tight_layout()
     plt.show()
 
+def _get_encoded_feature_names_from_prep(pre: ColumnTransformer) -> List[str]:
+    try:
+        return list(pre.get_feature_names_out())
+    except Exception:
+        names = []
+        try:
+            num_name, num_trans, num_cols = pre.transformers_[0]
+            cat_name, cat_trans, cat_cols = pre.transformers_[1]
+        except Exception:
+            return names
+        if isinstance(num_cols, list):
+            names.extend([f"num__{c}" for c in num_cols])
+        try:
+            cat_feature_names = cat_trans.get_feature_names_out(cat_cols)
+            names.extend([f"cat__{n}" for n in cat_feature_names])
+        except Exception:
+            for c in cat_cols:
+                names.append(f"cat__{c}")
+        return names
 
-def plot_pca_scatter_2d(X_encoded: np.ndarray, labels: np.ndarray, title: str = "PCA (2D) of clusters") -> None:
-    """
-    Scatter plot of data projected to 2 principal components. Use after encoding/scaling.
-    Pass the transformed matrix 'X_encoded' (e.g., result.pipeline.named_steps['prep'].transform(X)).
-    """
-    pca2 = PCA(n_components=2, random_state=42)
-    Z2 = pca2.fit_transform(X_encoded)
+def _pretty_name(n: str) -> str:
+    if n.startswith("num__"): n = n[5:]
+    if n.startswith("cat__"): n = n[5:]
+    return n
+
+def _top_features_for_pc(pca: PCA, feature_names: List[str], pc_index: int, top_k: int = 3) -> List[str]:
+    comp = pca.components_[pc_index]
+    idx = np.argsort(np.abs(comp))[::-1][:top_k]
+    return [_pretty_name(feature_names[i]) for i in idx]
+
+def plot_pca_scatter_2d_named(
+    pipeline: Pipeline,
+    X: pd.DataFrame,
+    labels: np.ndarray,
+    top_k: int = 3,
+    title_prefix: str = "Clusters (PCA 2D)",
+    annotate: bool = True,  # kept for signature compatibility; ignored
+    cluster_names: Optional[Dict[int, str] | Sequence[str]] = None,
+):
+    pre = pipeline.named_steps["prep"]
+    X_encoded = pre.transform(X)
+    pca = pipeline.named_steps.get("pca")
+    if pca is None or getattr(pca, "n_components_", None) is None:
+        pca = PCA(n_components=2, random_state=42).fit(X_encoded)
+        Z2 = pca.transform(X_encoded)
+    else:
+        Z_full = pca.transform(X_encoded)
+        Z2 = Z_full[:, :2] if Z_full.shape[1] >= 2 else PCA(n_components=2, random_state=42).fit_transform(X_encoded)
+
+    feature_names = _get_encoded_feature_names_from_prep(pre)
+    top1 = ", ".join(_top_features_for_pc(pca, feature_names, 0, top_k))
+    top2 = ", ".join(_top_features_for_pc(pca, feature_names, 1, top_k))
+
+    # Helper to resolve names
+    def name_for(c: int) -> str:
+        if isinstance(cluster_names, dict):
+            return cluster_names.get(int(c), f"Cluster {int(c)}")
+        if isinstance(cluster_names, (list, tuple)) and int(c) < len(cluster_names):
+            return str(cluster_names[int(c)])
+        return f"Cluster {int(c)}"
+
     plt.figure()
-    plt.scatter(Z2[:, 0], Z2[:, 1], c=labels, s=12)
-    plt.title(title)
-    plt.xlabel("PC1")
-    plt.ylabel("PC2")
+    plt.title(title_prefix)
+    plt.xlabel(f"PC1 (top: {top1})")
+    plt.ylabel(f"PC2 (top: {top2})")
+
+    clusters = np.unique(labels)
+    cmap = plt.get_cmap("tab10" if len(clusters) <= 10 else "tab20")
+    for i, c in enumerate(clusters):
+        m = labels == c
+        plt.scatter(Z2[m, 0], Z2[m, 1], s=12, color=cmap(i % cmap.N), label=name_for(int(c)), alpha=0.9)
+
+    plt.legend(loc="upper right", frameon=True, title="Clusters")
     plt.tight_layout()
     plt.show()
 
+def plot_pca_scatter_3d_named(pipeline: Pipeline, X: pd.DataFrame, labels: np.ndarray, top_k: int = 3, title_prefix: str = "Clusters (PCA 3D)"):
+    pre = pipeline.named_steps["prep"]
+    X_encoded = pre.transform(X)
+    pca = pipeline.named_steps.get("pca")
+    if pca is None or getattr(pca, "n_components_", None) is None or getattr(pca, "n_components_", 0) < 3:
+        pca = PCA(n_components=3, random_state=42).fit(X_encoded)
+        Z3 = pca.transform(X_encoded)
+    else:
+        Z_full = pca.transform(X_encoded)
+        Z3 = Z_full[:, :3] if Z_full.shape[1] >= 3 else PCA(n_components=3, random_state=42).fit_transform(X_encoded)
+    feature_names = _get_encoded_feature_names_from_prep(pre)
+    top1 = ", ".join(_top_features_for_pc(pca, feature_names, 0, top_k))
+    top2 = ", ".join(_top_features_for_pc(pca, feature_names, 1, top_k))
+    top3 = ", ".join(_top_features_for_pc(pca, feature_names, 2, top_k))
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+    ax.scatter(Z3[:, 0], Z3[:, 1], Z3[:, 2], s=12, c=labels)
+    ax.set_title(title_prefix)
+    ax.set_xlabel(f"PC1 (top: {top1})")
+    ax.set_ylabel(f"PC2 (top: {top2})")
+    ax.set_zlabel(f"PC3 (top: {top3})")
+    plt.tight_layout()
+    plt.show()
+
+def plot_feature_scatter_2d(
+    X: pd.DataFrame,
+    labels: np.ndarray,
+    x_col: str,
+    y_col: str,
+    title: Optional[str] = None,
+    annotate: bool = True,  # kept for signature compatibility; ignored
+    cluster_names: Optional[Dict[int, str] | Sequence[str]] = None,
+):
+    if title is None:
+        title = f"{x_col} vs {y_col}"
+    x = X[x_col].values
+    y = X[y_col].values
+
+    # Helper to resolve names
+    def name_for(c: int) -> str:
+        if isinstance(cluster_names, dict):
+            return cluster_names.get(int(c), f"Cluster {int(c)}")
+        if isinstance(cluster_names, (list, tuple)) and int(c) < len(cluster_names):
+            return str(cluster_names[int(c)])
+        return f"Cluster {int(c)}"
+
+    plt.figure()
+    plt.title(title)
+    plt.xlabel(x_col); plt.ylabel(y_col)
+
+    clusters = np.unique(labels)
+    cmap = plt.get_cmap("tab10" if len(clusters) <= 10 else "tab20")
+    for i, c in enumerate(clusters):
+        m = labels == c
+        plt.scatter(x[m], y[m], s=12, color=cmap(i % cmap.N), label=name_for(int(c)), alpha=0.9)
+
+    plt.legend(loc="upper right", frameon=True, title="Clusters")
+    plt.tight_layout()
+    plt.show()
+
+def plot_feature_scatter_3d(X: pd.DataFrame, labels: np.ndarray, x_col: str, y_col: str, z_col: str, title: Optional[str] = None):
+    if title is None:
+        title = f"{x_col} / {y_col} / {z_col}"
+    x = X[x_col].values
+    y = X[y_col].values
+    z = X[z_col].values
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+    ax.scatter(x, y, z, s=12, c=labels)
+    ax.set_title(title)
+    ax.set_xlabel(x_col); ax.set_ylabel(y_col); ax.set_zlabel(z_col)
+    plt.tight_layout()
+    plt.show()
 
 def plot_centroids_over_pca(X_encoded: np.ndarray, labels: np.ndarray, title: str = "Clusters with centroids (2D PCA)") -> None:
     """Like plot_pca_scatter_2d but overlays centroids."""
@@ -382,3 +521,148 @@ def plot_centroids_over_pca(X_encoded: np.ndarray, labels: np.ndarray, title: st
     plt.ylabel("PC2")
     plt.tight_layout()
     plt.show()
+
+def plot_pca_scatter_3d_interactive_named(
+    pipeline: Pipeline,
+    X: pd.DataFrame,
+    labels: np.ndarray,
+    top_k: int = 3,
+    title_prefix: str = "Clusters (PCA 3D, interactive)",
+    show: bool = True,
+):
+    """
+    Interactive 3D PCA scatter with per-cluster legend and centroid overlay.
+    Requires: plotly (pip install plotly)
+
+    If show=True (default), displays the figure and returns None.
+    If show=False, returns the plotly Figure without displaying (no double output).
+    """
+    try:
+        import plotly.graph_objects as go
+    except ImportError as e:
+        raise ImportError("plotly is required for interactive plots. Install with: pip install plotly") from e
+
+    labels = np.asarray(labels)
+    pre = pipeline.named_steps["prep"]
+    X_encoded = pre.transform(X)
+
+    # Get or fit a 3D PCA projection
+    pca = pipeline.named_steps.get("pca")
+    if pca is None or getattr(pca, "n_components_", None) is None or getattr(pca, "n_components_", 0) < 3:
+        from sklearn.decomposition import PCA as _PCA
+        pca = _PCA(n_components=3, random_state=42).fit(X_encoded)
+        Z3 = pca.transform(X_encoded)
+    else:
+        Z_full = pca.transform(X_encoded)
+        Z3 = Z_full[:, :3] if Z_full.shape[1] >= 3 else PCA(n_components=3, random_state=42).fit_transform(X_encoded)
+
+    # Axis labels with top features
+    feature_names = _get_encoded_feature_names_from_prep(pre)
+    top1 = ", ".join(_top_features_for_pc(pca, feature_names, 0, top_k))
+    top2 = ", ".join(_top_features_for_pc(pca, feature_names, 1, top_k))
+    top3 = ", ".join(_top_features_for_pc(pca, feature_names, 2, top_k))
+
+    # Build per-cluster traces for legend clarity
+    fig = go.Figure()
+    Z3x, Z3y, Z3z = Z3[:, 0], Z3[:, 1], Z3[:, 2]
+    clusters = np.unique(labels)
+    for c in clusters:
+        mask = labels == c
+        fig.add_scatter3d(
+            x=Z3x[mask],
+            y=Z3y[mask],
+            z=Z3z[mask],
+            mode="markers",
+            name=f"Cluster {int(c)}",
+            marker=dict(size=3, opacity=0.85),
+            hovertemplate="Cluster=%{text}<br>PC1=%{x:.3f}<br>PC2=%{y:.3f}<br>PC3=%{z:.3f}<extra></extra>",
+            text=[str(int(c))] * int(mask.sum()),
+        )
+
+    # Centroids in the same 3D space
+    nc = NearestCentroid().fit(Z3, labels)
+    C3 = nc.centroids_
+    fig.add_scatter3d(
+        x=C3[:, 0], y=C3[:, 1], z=C3[:, 2],
+        mode="markers+text",
+        name="Centroids",
+        marker=dict(size=8, symbol="x", color="black", line=dict(width=1, color="white")),
+        text=[str(i) for i in range(C3.shape[0])],
+        textposition="middle center",
+        hovertemplate="Centroid %{text}<br>PC1=%{x:.3f}<br>PC2=%{y:.3f}<br>PC3=%{z:.3f}<extra></extra>",
+    )
+
+    fig.update_layout(
+        title=title_prefix,
+        scene=dict(
+            xaxis_title=f"PC1 (top: {top1})",
+            yaxis_title=f"PC2 (top: {top2})",
+            zaxis_title=f"PC3 (top: {top3})",
+        ),
+        legend=dict(itemsizing="constant"),
+        margin=dict(l=0, r=0, t=40, b=0),
+    )
+    if show:
+        fig.show()
+        return None
+    return fig
+
+def plot_feature_scatter_3d_interactive(
+    X: pd.DataFrame,
+    labels: np.ndarray,
+    x_col: str,
+    y_col: str,
+    z_col: str,
+    title: Optional[str] = None,
+    show: bool = True,
+):
+    """
+    Interactive 3D scatter of raw features with per-cluster legend.
+    Requires: plotly (pip install plotly)
+
+    If show=True (default), displays the figure and returns None.
+    If show=False, returns the plotly Figure without displaying (no double output).
+    """
+    try:
+        import plotly.graph_objects as go
+    except ImportError as e:
+        raise ImportError("plotly is required for interactive plots. Install with: pip install plotly") from e
+
+    if title is None:
+        title = f"{x_col} / {y_col} / {z_col} (interactive)"
+
+    labels = np.asarray(labels)
+    x = X[x_col].values
+    y = X[y_col].values
+    z = X[z_col].values
+
+    fig = go.Figure()
+    clusters = np.unique(labels)
+    for c in clusters:
+        mask = labels == c
+        fig.add_scatter3d(
+            x=x[mask], y=y[mask], z=z[mask],
+            mode="markers",
+            name=f"Cluster {int(c)}",
+            marker=dict(size=3, opacity=0.85),
+            hovertemplate="Cluster=%{text}<br>"
+                          f"{x_col}=%{{x}}<br>"
+                          f"{y_col}=%{{y}}<br>"
+                          f"{z_col}=%{{z}}<extra></extra>",
+            text=[str(int(c))] * int(mask.sum()),
+        )
+
+    fig.update_layout(
+        title=title,
+        scene=dict(
+            xaxis_title=x_col,
+            yaxis_title=y_col,
+            zaxis_title=z_col,
+        ),
+        legend=dict(itemsizing="constant"),
+        margin=dict(l=0, r=0, t=40, b=0),
+    )
+    if show:
+        fig.show()
+        return None
+    return fig
