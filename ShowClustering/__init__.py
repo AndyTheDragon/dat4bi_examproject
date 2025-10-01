@@ -5,9 +5,11 @@ import matplotlib.pyplot as plt
 from sklearn.cluster import MeanShift, KMeans, estimate_bandwidth
 from sklearn import metrics
 from scipy.spatial.distance import cdist
+from sklearn.preprocessing import RobustScaler
+from sklearn.decomposition import PCA
 
 
-def _to_matrix(df: pd.DataFrame, drop_cols=('datetime', 'order_id', 'order_total')):
+def _to_matrix(df: pd.DataFrame, drop_cols=('datetime', 'order_id')):
     """
     Convert df to numeric matrix X after dropping common non-feature columns.
     Returns (X, feature_names).
@@ -17,58 +19,52 @@ def _to_matrix(df: pd.DataFrame, drop_cols=('datetime', 'order_id', 'order_total
     return X, cols
 
 
-def meanshift_diagrams(
-    df: pd.DataFrame,
-    bandwidth: float | None = None,
-    quantile: float = 0.2,
-    bin_seeding: bool = True,
-    drop_cols=('datetime', 'order_id', 'order_total')
-):
-    """
-    Fit MeanShift and plot:
-      - 2D scatter (first two features)
-      - 3D scatter (first three features), if available
-    Returns dict with labels, centers, n_clusters, bandwidth, feature_names.
-    """
-    X, cols = _to_matrix(df, drop_cols)
-    if X.shape[0] == 0 or X.shape[1] < 2:
-        raise ValueError("Need at least 1 row and 2 numeric columns after dropping.")
+def meanshift_diagrams(df, bandwidth=None, quantile=0.2, bin_seeding=True,
+                       drop_cols=('datetime','order_id')):
+    # 1) Matrix + (optional) log1p for order_total
+    cols = [c for c in df.columns if c not in set(drop_cols)]
+    M = df[cols].select_dtypes(include=[np.number]).copy()
+    if 'order_total' in M.columns:
+        M['order_total'] = np.log1p(M['order_total'].clip(lower=0))
 
-    if bandwidth is None:
-        bandwidth = estimate_bandwidth(X, quantile=quantile, n_samples=min(500, len(X)))
+    # 2) Scale
+    X = RobustScaler().fit_transform(M.to_numpy())
 
-    ms = MeanShift(bandwidth=bandwidth, bin_seeding=bin_seeding)
-    labels = ms.fit_predict(X)  # fit + labels
-    centers = ms.cluster_centers_
+    # 3) Bandwidth search (if not provided)
+    q_grid = [quantile] if bandwidth is not None else [0.10,0.15,0.20,0.25,0.30]
+    best = None
+    for q in q_grid:
+        bw = bandwidth or estimate_bandwidth(X, quantile=q, n_samples=min(1000, len(X)))
+        if not np.isfinite(bw) or bw <= 0: 
+            continue
+        ms = MeanShift(bandwidth=bw, bin_seeding=bin_seeding)
+        lbl = ms.fit_predict(X)
+        sizes = np.bincount(lbl)
+        top = sizes.max()/len(lbl)
+        score = (len(sizes) if len(sizes)>1 else 1e9) + 2.5*top  # simple balance heuristic
+        cand = (score, q, bw, lbl, ms.cluster_centers_)
+        best = min([best, cand], key=lambda t: t[0]) if best else cand
+
+    _, q_sel, bandwidth, labels, centers = best
     n_clusters = len(np.unique(labels))
 
-    # 2D plot (first two features)
-    plt.figure()
-    plt.scatter(X[:, 0], X[:, 1], c=labels, cmap='tab10', s=30)
-    plt.scatter(centers[:, 0], centers[:, 1], marker='x', c='red', s=100, linewidths=2)
-    plt.title(f'MeanShift: {n_clusters} clusters (bw={bandwidth:.3f})')
-    plt.xlabel(cols[0]); plt.ylabel(cols[1]); plt.grid(True, alpha=.3)
-    plt.show()
+    # 4) PCA plot for clarity
+    Z2 = PCA(n_components=2, random_state=42).fit_transform(X)
+    plt.figure(); plt.scatter(Z2[:,0], Z2[:,1], c=labels, s=20)
+    plt.title(f"MeanShift (PCA 2D) — {n_clusters} clusters (q={q_sel}, bw={bandwidth:.3f})")
+    plt.xlabel("PC1"); plt.ylabel("PC2"); plt.tight_layout(); plt.show()
 
-    # 3D plot (optional if >= 3 features)
+    # 5) Optional 3D if you want
     if X.shape[1] >= 3:
-        from mpl_toolkits.mplot3d import Axes3D  # noqa: F401
-        fig = plt.figure()
-        ax = fig.add_subplot(projection='3d')
-        ax.scatter(X[:, 0], X[:, 1], X[:, 2], c=labels, cmap='viridis', s=15)
-        cz = centers[:, 2] if centers.shape[1] >= 3 else np.zeros(len(centers))
-        ax.scatter(centers[:, 0], centers[:, 1], cz, marker='x', c='red', s=100, linewidths=2)
-        ax.set_title('MeanShift 3D (first 3 features)')
-        ax.set_xlabel(cols[0]); ax.set_ylabel(cols[1]); ax.set_zlabel(cols[2] if len(cols) >= 3 else 'z')
-        plt.show()
+        from mpl_toolkits.mplot3d import Axes3D  # noqa
+        Z3 = PCA(n_components=3, random_state=42).fit_transform(X)
+        fig = plt.figure(); ax = fig.add_subplot(projection='3d')
+        ax.scatter(Z3[:,0], Z3[:,1], Z3[:,2], c=labels, s=10)
+        ax.set_title("MeanShift (PCA 3D)"); plt.tight_layout(); plt.show()
 
-    return {
-        'labels': labels,
-        'centers': centers,
-        'n_clusters': n_clusters,
-        'bandwidth': bandwidth,
-        'feature_names': cols,
-    }
+    return {"labels": labels, "centers": centers, "n_clusters": n_clusters,
+            "bandwidth": bandwidth, "selected_quantile": q_sel, "feature_names": cols}
+
 
 
 def kmeans_elbow_diagram(
