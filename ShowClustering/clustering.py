@@ -47,11 +47,18 @@ __all__ = [
     "run_meanshift",
     "attach_labels",
     "plot_cluster_sizes",
-    "plot_pca_scatter_2d",
+    "plot_pca_scatter_2d",              # if you export it elsewhere
+    "plot_pca_scatter_2d_named",
     "plot_centroids_over_pca",
-    # added interactive plots
     "plot_pca_scatter_3d_interactive_named",
     "plot_feature_scatter_3d_interactive",
+    # one-liner API
+    "show_cluster_sizes",
+    "show_pca_scatter_2d",
+    "show_pca_scatter_3d_interactive",
+    "show_feature_scatter_2d",
+    "show_feature_scatter_3d_interactive",
+    "show_cluster_overview",
 ]
 
 # ---------------------------- Data & Features ----------------------------
@@ -666,3 +673,112 @@ def plot_feature_scatter_3d_interactive(
         fig.show()
         return None
     return fig
+
+# ---------------------------- One-liner "show_*" API ----------------------------
+
+def _default_feature_kwargs() -> Dict[str, Any]:
+    return dict(
+        numeric_cols=DEFAULT_NUMERIC_COLS,
+        categorical_cols=DEFAULT_CATEGORICAL_COLS,
+        ignore_cols=DEFAULT_IGNORE_COLS,
+        force_categorical=["day_of_week", "payment_method", "is_takeaway"],
+        auto_detect_categoricals=False,
+        force_log1p=["order_total"],
+    )
+
+def _default_cluster_kwargs() -> Dict[str, Any]:
+    return dict(
+        quantiles=(0.05, 0.10, 0.15, 0.20, 0.25, 0.30),
+        pca_variance=0.95,
+        min_cluster_size_ratio=0.01,
+        centroid_merge_eps=0.75,
+        sample_for_bw=5000,
+        random_state=42,
+    )
+
+def _prepare_and_cluster(df: pd.DataFrame, **kwargs) -> Tuple[MeanShiftResult, pd.DataFrame]:
+    # Split kwargs into feature vs clustering
+    fkw = _default_feature_kwargs()
+    ckw = _default_cluster_kwargs()
+    for k in list(kwargs.keys()):
+        if k in fkw:
+            fkw[k] = kwargs.pop(k)
+        if k in ckw:
+            ckw[k] = kwargs.pop(k)
+    X, _, _ = prepare_features(df, **fkw)
+    res = run_meanshift(X, **ckw)
+    return res, X
+
+def show_cluster_sizes(df: pd.DataFrame, **kwargs) -> Tuple[MeanShiftResult, pd.DataFrame]:
+    res, X = _prepare_and_cluster(df, **kwargs)
+    plot_cluster_sizes(res.labels)
+    return res, X
+
+def show_pca_scatter_2d(
+    df: pd.DataFrame,
+    *,
+    cluster_names: Optional[Dict[int, str] | Sequence[str]] = None,
+    top_k: int = 3,
+    title_prefix: str = "Clusters (PCA 2D)",
+    **kwargs,
+) -> Tuple[MeanShiftResult, pd.DataFrame]:
+    res, X = _prepare_and_cluster(df, **kwargs)
+    plot_pca_scatter_2d_named(res.pipeline, X, res.labels, top_k=top_k, title_prefix=title_prefix, cluster_names=cluster_names)
+    return res, X
+
+def show_pca_scatter_3d_interactive(
+    df: pd.DataFrame,
+    *,
+    cluster_names: Optional[Dict[int, str] | Sequence[str]] = None,  # reserved for future; colors/legend come from labels
+    top_k: int = 3,
+    title_prefix: str = "Clusters (PCA 3D, interactive)",
+    show: bool = True,
+    **kwargs,
+) -> Tuple[MeanShiftResult, pd.DataFrame]:
+    res, X = _prepare_and_cluster(df, **kwargs)
+    plot_pca_scatter_3d_interactive_named(res.pipeline, X, res.labels, top_k=top_k, title_prefix=title_prefix, show=show)
+    return res, X
+
+def show_feature_scatter_2d(
+    df: pd.DataFrame,
+    x_col: str,
+    y_col: str,
+    *,
+    cluster_names: Optional[Dict[int, str] | Sequence[str]] = None,
+    title: Optional[str] = None,
+    **kwargs,
+) -> Tuple[MeanShiftResult, pd.DataFrame]:
+    res, X = _prepare_and_cluster(df, **kwargs)
+    plot_feature_scatter_2d(X, res.labels, x_col=x_col, y_col=y_col, title=title, cluster_names=cluster_names)
+    return res, X
+
+def show_feature_scatter_3d_interactive(
+    df: pd.DataFrame,
+    x_col: str,
+    y_col: str,
+    z_col: str,
+    *,
+    title: Optional[str] = None,
+    show: bool = True,
+    **kwargs,
+) -> Tuple[MeanShiftResult, pd.DataFrame]:
+    res, X = _prepare_and_cluster(df, **kwargs)
+    plot_feature_scatter_3d_interactive(X, res.labels, x_col=x_col, y_col=y_col, z_col=z_col, title=title, show=show)
+    return res, X
+
+def show_cluster_overview(
+    df: pd.DataFrame,
+    *,
+    cluster_names: Optional[Dict[int, str] | Sequence[str]] = None,
+    include_interactive_3d: bool = True,
+    **kwargs,
+) -> Tuple[MeanShiftResult, pd.DataFrame]:
+    res, X = _prepare_and_cluster(df, **kwargs)
+    # sizes
+    plot_cluster_sizes(res.labels)
+    # 2D PCA with legend
+    plot_pca_scatter_2d_named(res.pipeline, X, res.labels, top_k=3, title_prefix="Clusters (PCA 2D)", cluster_names=cluster_names)
+    # interactive 3D PCA
+    if include_interactive_3d:
+        plot_pca_scatter_3d_interactive_named(res.pipeline, X, res.labels, top_k=3, title_prefix="Clusters (PCA 3D, interactive)", show=True)
+    return res, X
