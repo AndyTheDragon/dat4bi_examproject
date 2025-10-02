@@ -24,15 +24,14 @@ The purpose is to analyze and predict customer behaviour per channel so that the
 
 ## Research Questions
 
-- *"How do order characteristics differ across the five sales channels?"*
-- *"Can we predict the sales channel of a new order with at least 80% accuracy?"*
-- *"Which features are most important for differentiating sales channels, and how can these insights guide operations and marketing?"*
+- *How do order characteristics differ across the five sales channels?*
+- *Can we predict the sales channel of a new order with at least 80% accuracy?*
+- *Which features are most important for differentiating sales channels, and how can these insights guide operations and marketing?*
 
 ## Hypotheses
 
-- Orders placed through a takeaway platform will have a higher order total compared to in house dining
-- The more main dishes ordered in house, the more beverages is ordered.
-- The weekdays with the lowest order-totals will have more take-away orders.
+- The average spend pr customer is higher for in-house customers as the probability for them ordering drinks is higher than people eating takeaway.
+- The more main dishes ordered in house, the more beverages are ordered.
 
 ## Proposed Solution
 
@@ -43,22 +42,51 @@ We will build a descriptive analytics and machine learning project to achieve th
 The project will use historical order data. We will aggregate and engineer features from the order lines to form a dataset with the following columns:
 
 - order_id (unique identifier)
+- day_of_week
+- order_total
 - sales_channel (our target variable)
 - number_of_maindishes
 - number_of_snacks
 - number_of_drinks
-- order_total
+- number_of_soups
+- number_of_extras
 - is_takeaway (a binary variable)
-- time_of_day
-- day_of_week
 
-#### Data
+### From Raw Data to Dataframe
 
-We have a data_engineering.ipynb file where we load the dataset in the format that we receive it. We decide to format it by updating names for product categories, ensuring numeric values and removing any irrelevant information etc. 
+In the data_engineering.ipynb we take our raw data and transforms it into the above columns. Orderlines have been aggregated into one row that represents the whole order, where before an order would be on several rows.
+Text values have been encoded into numeric values as described in the tables below.
 
-#### Report
+#### Understanding the Data
 
-In our report we have used the formatted dataset which we worked out from data_engineering.ipynb. This is where we begin our actual analysis, exploring and cleaning the data, preparing the data for clustering, boxplots, histograms, decision tree and heatmap.
+The following columns have been encoded into numeric values as displayed below;
+
+#### day_of_week
+
+| #  | Text       |
+|----|------------|
+| 1  | Monday     |
+| 2  | Tuesday    |
+| 3  | Wednesday  |
+| 4  | Thursday   |
+| 5  | Friday     |
+| 6  | Saturday   |
+| 7  | Sunday     |
+
+#### payment_method
+
+| #  | Text       |
+|----|------------|
+| 1  | Mealo      |
+| 2  | Wolt       |
+| 3  | In-House   |
+
+#### is_takeaway
+
+| #  | Text       |
+|----|------------|
+| 1  | Takeaway   |
+| 2  | In-House   |
 
 ## Project Planning
 
@@ -67,12 +95,22 @@ In our report we have used the formatted dataset which we worked out from data_e
   - Sprint 2: Data Preparation
   - Sprint 3: Data Modelling
   - Sprint 4: Business Application
-- Tools and technologies
-- Teamwork setup
+- **Tools and technologies**
+  - StreamLit Application
+  - Anaconda 3 Python environment and libraries
+  - Jupyter Notebook
 
 ## Repository & Developtment setup
 
-Git repository: [https://github.com/AndyTheDragon/dat4bi_examproject](https://github.com/AndyTheDragon/dat4bi_examproject)
-
+- Git repository: [https://github.com/AndyTheDragon/dat4bi_examproject](https://github.com/AndyTheDragon/dat4bi_examproject)
 - Structure
+  - Four Python packages called *DataExploration*, *ShowClassifcation*, *ShowClustering*, *ShowLinearRegression*
+  - *data* folder containing raw and clean data
+  - *Notebooks* used for experimenting before inserting into report
+  - *Documents* containing files such as the decision tree pdf
+  - A *report.ipynb* notebook containing our findings
+  - *README.md*
+  - *App_\*.py* files pertaining the streamlit application
 - Software Requirements
+  - Graphviz
+  - Streamlit

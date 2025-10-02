@@ -1,4 +1,4 @@
-datetime,day_of_week,order_id,order_total,payment_method,number_of_maindishes,number_of_snacks,number_of_drinks,number_of_soups,number_of_extras,is_takeaway
+datetime,day_of_week,order_id,order_total,sales_channel,number_of_maindishes,number_of_snacks,number_of_drinks,number_of_soups,number_of_extras,is_takeaway
 2025-01-02 12:58:00,4,15064,327.0,1,2.0,1.0,0.0,0.0,0.0,1
 2025-01-02 15:06:00,4,15065,287.0,2,1.0,2.0,0.0,0.0,0.0,1
 2025-01-02 15:25:00,4,6119,685.0,3,2.0,1.0,1.0,1.0,0.0,0
