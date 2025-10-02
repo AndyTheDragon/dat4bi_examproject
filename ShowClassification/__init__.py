@@ -64,7 +64,7 @@ def show_decision_tree(df, target_col, test_size=0.2, random_state=42, max_depth
         special_characters=True
     )
     graph = graphviz.Source(dot_data)
-    graph.render("decision_tree")  # Save the tree as a file
+    graph.render("Documents/decision_tree")  # Save the tree as a file
     display(graph)
 
     # Print metrics
