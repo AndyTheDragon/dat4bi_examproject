@@ -67,9 +67,8 @@ def show_decision_tree(df, target_col, test_size=0.2, random_state=42, max_depth
     graph.render("Documents/decision_tree")  # Save the tree as a file
     display(graph)
 
-    # Print metrics
-    print("Accuracy:", accuracy)
-    print("Confusion Matrix:\n", confusion_mat)
+
+    
 
     # Plot confusion matrix as a heatmap
     sns.heatmap(confusion_mat, annot=True, fmt='d', cmap='Blues', xticklabels=np.unique(y), yticklabels=np.unique(y))
@@ -78,4 +77,7 @@ def show_decision_tree(df, target_col, test_size=0.2, random_state=42, max_depth
     plt.title('Confusion Matrix')
     plt.show()
 
-    return classifier, accuracy, confusion_mat
+        # Print metrics
+    print("Accuracy:", accuracy)
+    print("Confusion Matrix:\n", confusion_mat)
+    print("Classifier:", classifier)
