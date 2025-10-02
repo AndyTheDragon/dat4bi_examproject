@@ -52,6 +52,14 @@ The project will use historical order data. We will aggregate and engineer featu
 - time_of_day
 - day_of_week
 
+#### Data
+
+We have a data_engineering.ipynb file where we load the dataset in the format that we receive it. We decide to format it by updating names for product categories, ensuring numeric values and removing any irrelevant information etc. 
+
+#### Report
+
+In our report we have used the formatted dataset which we worked out from data_engineering.ipynb. This is where we begin our actual analysis, exploring and cleaning the data, preparing the data for clustering, boxplots, histograms, decision tree and heatmap.
+
 ## Project Planning
 
 - **Sprint Timeline**
