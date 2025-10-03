@@ -66,11 +66,8 @@ def show_decision_tree(df, target_col, test_size=0.2, random_state=42, max_depth
     graph = graphviz.Source(dot_data)
     graph.render("Documents/decision_tree")  # Save the tree as a file
     display(graph)
-
-    # Print metrics
     print("Accuracy:", accuracy)
-    print("Confusion Matrix:\n", confusion_mat)
-    print("Classifier:", classifier)
+    
     
 
     # Plot confusion matrix as a heatmap
@@ -85,9 +82,6 @@ def show_decision_tree(df, target_col, test_size=0.2, random_state=42, max_depth
     importances = classifier.feature_importances_
     importances_series = pd.Series(importances, index=feature_names).sort_values(ascending=False)
 
-    print("\nFeature importances:")
-    print(importances_series)
-
     # bar plot
     plt.figure(figsize=(8, 4))
     sns.barplot(x=importances_series.values, y=importances_series.index, palette='viridis')
@@ -95,5 +89,13 @@ def show_decision_tree(df, target_col, test_size=0.2, random_state=42, max_depth
     plt.title('Feature importances')
     plt.tight_layout()
     plt.show()
+
+    # Print metrics
+    #print("Confusion Matrix:\n", confusion_mat)
+    #print("Classifier:", classifier)
+
+    #print("\nFeature importances:")
+    #print(importances_series)
+
 
     return classifier, accuracy, confusion_mat, importances_series
