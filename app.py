@@ -9,6 +9,16 @@ import ShowLinearRegression as slr
 import ShowClassification as sc
 import ShowClustering.clustering as scc
 
+@st.cache_data
+def load_data(path):
+    df = pd.read_csv(path)
+    df = df.drop(['datetime', 'order_id'], axis=1, inplace=False)
+    df = df.drop(df[df.lt(0).any(axis=1)].index)
+    return df
+
+if 'raw_data' not in st.session_state:
+    st.session_state['raw_data'] = load_data("data/cleaned_sales_data.csv")
+    
 pages = {
     "Data Exploration": [
         st.Page("app_data_cleaning.py", title="Data cleaning and engineering"),
@@ -24,14 +34,6 @@ pages = {
 pg = st.navigation(pages, position="sidebar", expanded=True)
 pg.run()
 
-@st.cache_data
-def load_data(path):
-    df = pd.read_csv(path)
-    df = df.drop(['datetime', 'order_id'], axis=1, inplace=False)
-    df = df.drop(df[df.lt(0).any(axis=1)].index)
-    return df
 
-if 'raw_data' not in st.session_state:
-    st.session_state['raw_data'] = load_data("data/cleaned_sales_data.csv")
 
 
