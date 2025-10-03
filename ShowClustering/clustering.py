@@ -351,13 +351,14 @@ def attach_labels(df: pd.DataFrame, labels: np.ndarray, column: str = "cluster")
 def plot_cluster_sizes(labels: np.ndarray) -> None:
     """Bar plot of cluster sizes."""
     unique, counts = np.unique(labels, return_counts=True)
-    plt.figure()
+    fig = plt.figure()
     plt.bar(unique, counts)
     plt.title("Cluster sizes")
     plt.xlabel("Cluster label")
     plt.ylabel("Count")
     plt.tight_layout()
     plt.show()
+    return fig
 
 def _get_encoded_feature_names_from_prep(pre: ColumnTransformer) -> List[str]:
     try:
@@ -420,7 +421,7 @@ def plot_pca_scatter_2d_named(
             return str(cluster_names[int(c)])
         return f"Cluster {int(c)}"
 
-    plt.figure()
+    fig = plt.figure()
     plt.title(title_prefix)
     plt.xlabel(f"PC1 (top: {top1})")
     plt.ylabel(f"PC2 (top: {top2})")
@@ -434,6 +435,7 @@ def plot_pca_scatter_2d_named(
     plt.legend(loc="upper right", frameon=True, title="Clusters")
     plt.tight_layout()
     plt.show()
+    return fig
 
 def plot_pca_scatter_3d_named(pipeline: Pipeline, X: pd.DataFrame, labels: np.ndarray, top_k: int = 3, title_prefix: str = "Clusters (PCA 3D)"):
     pre = pipeline.named_steps["prep"]
@@ -481,7 +483,7 @@ def plot_feature_scatter_2d(
             return str(cluster_names[int(c)])
         return f"Cluster {int(c)}"
 
-    plt.figure()
+    fig = plt.figure()
     plt.title(title)
     plt.xlabel(x_col); plt.ylabel(y_col)
 
@@ -494,6 +496,7 @@ def plot_feature_scatter_2d(
     plt.legend(loc="upper right", frameon=True, title="Clusters")
     plt.tight_layout()
     plt.show()
+    return fig
 
 def plot_feature_scatter_3d(X: pd.DataFrame, labels: np.ndarray, x_col: str, y_col: str, z_col: str, title: Optional[str] = None):
     if title is None:
@@ -711,8 +714,8 @@ def _prepare_and_cluster(df: pd.DataFrame, **kwargs) -> Tuple[MeanShiftResult, p
 
 def show_cluster_sizes(df: pd.DataFrame, **kwargs) -> Tuple[MeanShiftResult, pd.DataFrame]:
     res, X = _prepare_and_cluster(df, **kwargs)
-    plot_cluster_sizes(res.labels)
-    return res, X
+    fig = plot_cluster_sizes(res.labels)
+    return res, X, fig
 
 def show_pca_scatter_2d(
     df: pd.DataFrame,
@@ -723,8 +726,8 @@ def show_pca_scatter_2d(
     **kwargs,
 ) -> Tuple[MeanShiftResult, pd.DataFrame]:
     res, X = _prepare_and_cluster(df, **kwargs)
-    plot_pca_scatter_2d_named(res.pipeline, X, res.labels, top_k=top_k, title_prefix=title_prefix, cluster_names=cluster_names)
-    return res, X
+    fig = plot_pca_scatter_2d_named(res.pipeline, X, res.labels, top_k=top_k, title_prefix=title_prefix, cluster_names=cluster_names)
+    return res, X, fig
 
 def show_pca_scatter_3d_interactive(
     df: pd.DataFrame,
@@ -749,8 +752,8 @@ def show_feature_scatter_2d(
     **kwargs,
 ) -> Tuple[MeanShiftResult, pd.DataFrame]:
     res, X = _prepare_and_cluster(df, **kwargs)
-    plot_feature_scatter_2d(X, res.labels, x_col=x_col, y_col=y_col, title=title, cluster_names=cluster_names)
-    return res, X
+    fig = plot_feature_scatter_2d(X, res.labels, x_col=x_col, y_col=y_col, title=title, cluster_names=cluster_names)
+    return res, X, fig
 
 def show_feature_scatter_3d_interactive(
     df: pd.DataFrame,
