@@ -130,10 +130,11 @@ def show_correlation_heatmap(df: pd.DataFrame):
         print("Correlation heatmap requires at least two numeric columns.")
         return
     corr = df[numeric_cols].corr()
-    plt.figure(figsize=(10, 8))
+    fig = plt.figure(figsize=(10, 8))
     sns.heatmap(corr, annot=True, cmap='coolwarm', fmt=".2f")
     plt.title('Correlation Matrix of Numeric Features')
     plt.show()
+    return fig
 
 
 def show_grouped_histograms(
