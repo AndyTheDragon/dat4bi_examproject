@@ -84,7 +84,7 @@ def show_decision_tree(df, target_col, test_size=0.2, random_state=42, max_depth
 
     # bar plot
     plt.figure(figsize=(8, 4))
-    sns.barplot(x=importances_series.values, y=importances_series.index, palette='viridis')
+    sns.barplot(x=importances_series.values, y=importances_series.index)
     plt.xlabel('Importance')
     plt.title('Feature importances')
     plt.tight_layout()
