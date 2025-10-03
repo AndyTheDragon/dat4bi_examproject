@@ -12,8 +12,10 @@ df = st.session_state['raw_data']
 st.write("""
 A decision tree classification model has been made in order to predict the sales channel of the order.
 """)
+# max_depth input slider
+max_depth = st.slider("Max depth", 1, 30, 4)
 
-cl = sc.show_decision_tree(df, 'sales_channel', max_depth=4)
+cl = sc.show_decision_tree(df, 'sales_channel', max_depth=max_depth)
 classifier, accuracy, confusion_mat, importances_series, graph, cffig, impfig = cl
 st.graphviz_chart(graph.source)
 st.write(f"Accuracy: {accuracy}")
