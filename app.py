@@ -19,7 +19,7 @@ pages = {
     "Models": [
         st.Page("app_linear.py", title="Linear Regression"),
         st.Page("app_classification.py", title="Classification"),
-        #st.Page("app_clustering.py", title="Clustering"),
+        st.Page("app_clustering.py", title="Clustering"),
     ],
 }
 
@@ -33,9 +33,7 @@ def load_data(path):
     df = df.drop(df[df.lt(0).any(axis=1)].index)
     return df
 
-# load once (cached) and store raw dataframe in session_state
 if 'raw_data' not in st.session_state:
     st.session_state['raw_data'] = load_data("data/cleaned_sales_data.csv")
 
-#data = st.session_state['raw_data']
 
