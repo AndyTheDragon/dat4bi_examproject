@@ -71,6 +71,7 @@ def show_decision_tree(df, target_col, test_size=0.2, random_state=42, max_depth
     
 
     # Plot confusion matrix as a heatmap
+    cffig = plt.figure(figsize=(6, 4))
     sns.heatmap(confusion_mat, annot=True, fmt='d', cmap='Blues', xticklabels=np.unique(y), yticklabels=np.unique(y))
     plt.xlabel('Predicted')
     plt.ylabel('Actual')
@@ -83,7 +84,7 @@ def show_decision_tree(df, target_col, test_size=0.2, random_state=42, max_depth
     importances_series = pd.Series(importances, index=feature_names).sort_values(ascending=False)
 
     # bar plot
-    plt.figure(figsize=(8, 4))
+    impfig = plt.figure(figsize=(8, 4))
     sns.barplot(x=importances_series.values, y=importances_series.index)
     plt.xlabel('Importance')
     plt.title('Feature importances')
@@ -98,4 +99,4 @@ def show_decision_tree(df, target_col, test_size=0.2, random_state=42, max_depth
     #print(importances_series)
 
 
-    return classifier, accuracy, confusion_mat, importances_series
+    return classifier, accuracy, confusion_mat, importances_series, graph, cffig, impfig
