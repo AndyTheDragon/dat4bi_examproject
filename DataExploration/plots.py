@@ -39,6 +39,7 @@ def show_boxplots(df: pd.DataFrame, layout: str = "separate"):
             plt.ylabel(column)
             plt.tight_layout()
             plt.show()
+    return fig, axes
 
 
 def show_histograms(df: pd.DataFrame, bins: int = 10, layout: str = "separate", bell_curve: bool = False):
@@ -97,6 +98,7 @@ def show_histograms(df: pd.DataFrame, bins: int = 10, layout: str = "separate", 
             plt.grid(True)
             plt.tight_layout()
             plt.show()
+    return fig, axes
 
 
 def show_scatter_matrix(df: pd.DataFrame, figsize: tuple = (12, 12), diagonal: str = "hist"):
