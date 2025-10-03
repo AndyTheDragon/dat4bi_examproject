@@ -28,7 +28,10 @@ pg.run()
 
 @st.cache_data
 def load_data(path):
-    return pd.read_csv(path)
+    df = pd.read_csv(path)
+    df = df.drop(['datetime', 'order_id'], axis=1, inplace=False)
+    df = df.drop(df[df.lt(0).any(axis=1)].index)
+    return df
 
 # load once (cached) and store raw dataframe in session_state
 if 'raw_data' not in st.session_state:
