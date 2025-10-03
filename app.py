@@ -9,8 +9,6 @@ import ShowLinearRegression as slr
 import ShowClassification as sc
 import ShowClustering.clustering as scc
 
-st.title("Restaurant Sales Data Analysis")
-
 pages = {
     "Data Exploration": [
         st.Page("app_data_cleaning.py", title="Data cleaning and engineering"),
