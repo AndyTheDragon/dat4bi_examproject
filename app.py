@@ -18,7 +18,7 @@ pages = {
     ],
     "Models": [
         st.Page("app_linear.py", title="Linear Regression"),
-        #st.Page("app_classification.py", title="Classification"),
+        st.Page("app_classification.py", title="Classification"),
         #st.Page("app_clustering.py", title="Clustering"),
     ],
 }
@@ -37,6 +37,5 @@ def load_data(path):
 if 'raw_data' not in st.session_state:
     st.session_state['raw_data'] = load_data("data/cleaned_sales_data.csv")
 
-data = st.session_state['raw_data']
-st.dataframe(data, use_container_width=True)
+#data = st.session_state['raw_data']
 
