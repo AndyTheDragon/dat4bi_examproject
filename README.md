@@ -85,8 +85,8 @@ The following columns have been encoded into numeric values as displayed below;
 
 | #  | Text       |
 |----|------------|
+| 0  | In-House   |
 | 1  | Takeaway   |
-| 2  | In-House   |
 
 ## Project Planning
 
